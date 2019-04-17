@@ -253,7 +253,7 @@ export default class Main {
       console.log('don\'t have device Motion')
     }
 
-    //TODO : 如何获取设备状态？
+    //TODO: 如何获取设备状态？
     let temp = ['up', 'don', 'left', 'right', 'left-down', 'right-dow'];
     //console.log(temp);
     mechineStatus = temp[movementIndex];
@@ -382,6 +382,8 @@ export default class Main {
    * @param {*} movement 当前动作
    * @param {*} angle 当前设备状态
    * @param {*} angleToNorth 设备初始状态与正北方向夹角
+   * @returns true 状态正确
+   * @returns false 状态错误，结束游戏
    */
   angleToStatus(movement, angle, angleToNorth){
     statusSet = ["left", "right", "up", "down", "left_rotate", "right_rotate"]
@@ -400,5 +402,13 @@ export default class Main {
     }else{
       return false
     }
+  }
+
+  /**
+   * 
+   * @param {*} msg 显示信息
+   */
+  showMessage(msg){
+
   }
 }
