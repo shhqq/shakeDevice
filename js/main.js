@@ -14,6 +14,8 @@ let challengeItem = {
   timeDuration: [2, 3, 4, 3, 5, 4] //持续时间，单位：秒，需大于1s，在0.5秒前提醒下一个动作，第一个动作需要大于1s
 }
 let movementIndex = 0;
+//初始状态与正北方向夹角
+let angleToNorth
 /**
  * 游戏主函数
  */
@@ -25,7 +27,7 @@ export default class Main {
     // 维护当前requestAnimationFrame的id
     this.aniId    = 0
 
-    this.restart()
+    //this.restart()
   }
 
   restart() {
@@ -191,12 +193,54 @@ export default class Main {
   startMyGame = () => {
     var that = this;
     //console.log(this)
+    let p1 = new Promise(function(resolve, reject){
       let timeStart = new Date().getTime();
-      this.testFunction(timeStart)
-    } else {
-      setTimeout(this.getMechineStatus, 1000);
-    }
-
+      let devicePosition = this.devicePositionAdjust(timeStart)
+      if(devicePosition){
+        resolve('successed')
+      }else{
+        reject('failed')
+      }
+    })
+    p1.then(function(value){
+      console.log("ready to play")
+      this.showNextMovement(challengeItem.movement[movementIndex]);
+      //第一个动作0.5s后检测，以后的动作因为是提前0.5s显示，所以1s后检测状态
+      if (movementIndex == 0) {
+        setTimeout(this.getMechineStatus, 500);
+        timeStart = new Date().getTime();
+        this.getDecivePosi(timeStart)
+      } else {
+        setTimeout(this.getMechineStatus, 1000);
+      }
+    },function(reason){
+      wx.showToast({
+        title:"请重新调整设备",
+        icon: "none",
+        duration: 2000
+      })
+    })
+    // let timeStart = new Date().getTime();
+    // let devicePosition = this.devicePositionAdjust(timeStart)
+    // console.log(devicePosition)
+    // if(this.devicePositionAdjust(timeStart)){
+    //   console.log("ready to play")
+    //   this.showNextMovement(challengeItem.movement[movementIndex]);
+    //   //第一个动作0.5s后检测，以后的动作因为是提前0.5s显示，所以1s后检测状态
+    //   if (movementIndex == 0) {
+    //     setTimeout(this.getMechineStatus, 500);
+    //     timeStart = new Date().getTime();
+    //     this.getDecivePosi(timeStart)
+    //   } else {
+    //     setTimeout(this.getMechineStatus, 1000);
+    //   }
+    // }else{
+    //   wx.showToast({
+    //     title:"请重新调整设备",
+    //     icon: "none",
+    //     duration: 2000
+    //   })
+    // }
   }
 
   /**
@@ -233,6 +277,9 @@ export default class Main {
           //TODO: 收集三次状态，求平均值，normal模式0.2s输出一次，因此持续收集0.6s状态
           if(temp_i<3){
             status_record.push(res)
+            temp_i++
+          }else{
+            wx.stopDeviceMotionListening
           }
           //wx.onDeviceMotionChange(function(res){
             //每两秒输出一次坐标状态
@@ -279,6 +326,7 @@ export default class Main {
    */
   showNextMovement(movement) {
     console.log('next movement is ' + movement);
+    this.showMsg('next is ' + movement)
     //this.timeInverval();
   }
 
@@ -292,12 +340,12 @@ export default class Main {
   }
 
   /**
-   * 获取手机姿势
+   * 获取手机姿势--test function
    * @param {*} timeStart 游戏开始时间
    */
-  testFunction(timeStart){
-    let a = 0.3244;
-    console.log('a is ' ,a.toFixed(2))
+  getDecivePosi(timeStart){
+    //let a = 0.3244;
+    //console.log('a is ' ,a.toFixed(2))
     if(wx.startDeviceMotionListening){
       wx.startDeviceMotionListening({
         interval: 'normal',
@@ -331,27 +379,50 @@ export default class Main {
    */
   devicePositionAdjust(timeStart){
     console.log("请调整手机姿势至平放") //不需要指北
-    var showNum = 0
-    var readyNum = 0
+    var showNum = 0           //总检测次数
+    var readyNum = 0          //连续两次检测状态正确
+    let angleToNorth = 0.0    //与正北方向夹角
+    let maxNum = 5            //总检测次数不超过5次，即10s
+    //let changeNum = 0         //记录状态改变次数
     if(wx.startDeviceMotionListening){
       wx.startDeviceMotionListening({
         interval: 'normal',
         success: function(res){
           console.log(res);
           wx.onDeviceMotionChange(function(res){
+            //changeNum++;
+            //console.log(changeNum)
             //每两秒输出一次坐标状态
             let dateNow = new Date().getTime()
-            if(dateNow - timeStart > 2 * 1000){
+            if(dateNow - timeStart > 3 * 1000){   //每3秒检测一次
               timeStart = dateNow;
               showNum++
               console.log(res.alpha.toFixed(2), res.beta.toFixed(2), res.gamma.toFixed(2));
-              if(abs(res.alpha.toFixed(2)<10 && abs(res.alpha.toFixed(2)<10))){
+              // console.log(Math.abs(res.gamma.toFixed(2)))
+              // console.log(Math.abs(res.beta.toFixed(2)))
+              if(Math.abs(res.gamma.toFixed(2)) <10 && Math.abs(res.beta.toFixed(2))<10){ //左右和俯仰状态正常
+                console.log("now position is ok")
                 readyNum++
+                angleToNorth+=res.alpha;
               }  
-            }
-            if(readyNum>1 || showNum>=5){   //  如果连续两秒状态合适或时间大于10s，则结束调整
-              //TODO : 需要记录水平角度，即与正北方向夹角
-              wx.stopDeviceMotionListening()
+            
+              if(readyNum>1 || showNum >= maxNum){   //  如果连续两秒状态合适或时间大于10s，则结束调整
+                //TODO : 需要记录水平角度，即与正北方向夹角
+                //console.log("readyNum is " +readyNum)
+                wx.stopDeviceMotionListening()
+                console.log("stop device motion listening")
+                console.log("showNum is " + showNum)
+                //手机调整时间不能超过10秒
+                if(showNum<5){
+                  console.log("请保持此状态")
+                  angleToNorth /= readyNum
+                  console.log("readyNum is " + readyNum)
+                  console.log("device position OK and angleToNorth is " + angleToNorth)
+                  return true
+                }else if(showNum >= maxNum){
+                  return false
+                }
+              }
             }
             //console.log(res);
           })
@@ -365,12 +436,15 @@ export default class Main {
       console.log('don\'t have device Motion')
     }
     //手机调整时间不能超过10秒
-    if(showNum<5){
-      console.log("请保持此状态")
-      return true
-    }else if(showNum>=5){
-      return false
-    }
+    // if(showNum<5){
+    //   console.log("请保持此状态")
+    //   angleToNorth /= readyNum
+    //   console.log("readyNum is " + readyNum)
+    //   console.log("device position OK and angleToNorth is " + angleToNorth)
+    //   return true
+    // }else if(showNum>=5){
+    //   return false
+    // }
   }
 
   /**
@@ -382,18 +456,18 @@ export default class Main {
    * @returns false 状态错误，结束游戏
    */
   angleToStatus(movement, angle, angleToNorth){
-    statusSet = ["left", "right", "up", "down", "left_rotate", "right_rotate"]
-    if(movement == "left" && abs(angle[2]-90) < 10){  
+    let statusSet = ["left", "right", "up", "down", "left_rotate", "right_rotate"]
+    if(movement == "left" && Math.Math.abs(angle[2]-90) < 10){  
       return true
-    }else if(movement == "right" && abs(angle[2]+90) < 10){
+    }else if(movement == "right" && Math.abs(angle[2]+90) < 10){
       return true
-    }else if(movement == "up" && abs(angle[1] + 90 ) < 10){
+    }else if(movement == "up" && Math.abs(angle[1] + 90 ) < 10){
       return true
-    }else if(movement == "down" && abs(angle[1] - 90) < 10){
+    }else if(movement == "down" && Math.abs(angle[1] - 90) < 10){
       return true
-    }else if(movement == "left_rotate" && (abs(angle[0] - angleToNorth +90)<10 ||abs(angle[0]-angleToNorth-270)<10)){
+    }else if(movement == "left_rotate" && (Math.abs(angle[0] - angleToNorth +90)<10 ||Math.abs(angle[0]-angleToNorth-270)<10)){
       return true
-    }else if(movement == "right_rotate"&&(abs(angle[0]-angleToNorth-90)<10 || abs(angle[0]-angleToNorth+270)<10)){
+    }else if(movement == "right_rotate"&&(Math.abs(angle[0]-angleToNorth-90)<10 || Math.abs(angle[0]-angleToNorth+270)<10)){
       return true
     }else{
       return false
@@ -401,10 +475,32 @@ export default class Main {
   }
 
   /**
-   * 
+   * 显示交互信息
    * @param {*} msg 显示信息
    */
-  showMessage(msg){
+  showMsg(msg){
+    wx.showToast({
+      title: msg,
+      icon: "none",
+      duration: 1000
+    })
+  }
 
+  /**
+   * 计算状态均值
+   * @param {*} angleBox 状态记录
+   * @returns {*} res 均值
+   */
+  meanAngle(angleBox){
+    let res = []
+    for(let i = 0; i< 3; i++){
+      let temp = 0.0
+      for(let j = 0; j< angleBox.length; j++){
+        temp+=angleBox[j][i]
+      }
+      temp= temp/angleBox.length
+      res.push(temp)
+    }
+    return res
   }
 }
