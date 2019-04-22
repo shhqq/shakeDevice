@@ -191,10 +191,6 @@ export default class Main {
   startMyGame = () => {
     var that = this;
     //console.log(this)
-    this.showNextMovement(challengeItem.movement[movementIndex]);
-    //第一个动作0.5s后检测，以后的动作因为是提前0.5s显示，所以1s后检测状态
-    if (movementIndex == 0) {
-      setTimeout(this.getMechineStatus, 500);
       let timeStart = new Date().getTime();
       this.testFunction(timeStart)
     } else {
