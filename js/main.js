@@ -22,7 +22,7 @@ let angleToNorth
 export default class Main {
   constructor() {
     //游戏主入口
-    this.startMyGame();
+    this.getReady();
 
     // 维护当前requestAnimationFrame的id
     this.aniId    = 0
@@ -188,59 +188,54 @@ export default class Main {
   }
 
   /**
+   * 提示用户调整设备状态直到设备水平
+   */
+  getReady() {
+    var that = this
+    let timeStart = new Date().getTime();
+
+    that.devicePositionAdjust(timeStart).then(
+      function (value) {
+        console.log('value is ', value)
+        console.log("ready to play")
+        that.startMyGame()
+      },
+      function (reason) {
+        //TODO: 用户选择重新调整设备或退出游戏返回主界面
+        console.log('reason is ', reason)
+        wx.showModal({
+          title: "提示",
+          content: "请重新调整状态",
+          success(res) {
+            if (res.confirm) {
+              console.log('adjust device again')
+              that.getReady()
+            } else if (res.cancel) {
+              console.log('cancel')
+              //TODO: 返回游戏主界面
+            }
+          }
+        })
+      }
+    )
+  }
+
+  /**
    * 游戏开始函数
    */
   startMyGame = () => {
+    console.log('game start')
     var that = this;
-    //console.log(this)
-    let p1 = new Promise(function(resolve, reject){
-      let timeStart = new Date().getTime();
-      let devicePosition = this.devicePositionAdjust(timeStart)
-      if(devicePosition){
-        resolve('successed')
-      }else{
-        reject('failed')
-      }
-    })
-    p1.then(function(value){
-      console.log("ready to play")
-      this.showNextMovement(challengeItem.movement[movementIndex]);
-      //第一个动作0.5s后检测，以后的动作因为是提前0.5s显示，所以1s后检测状态
-      if (movementIndex == 0) {
-        setTimeout(this.getMechineStatus, 500);
-        timeStart = new Date().getTime();
-        this.getDecivePosi(timeStart)   //test line
-      } else {
-        setTimeout(this.getMechineStatus, 1000);
-      }
-    },function(reason){
-      wx.showToast({
-        title:"请重新调整设备",
-        icon: "none",
-        duration: 2000
-      })
-    })
-    // let timeStart = new Date().getTime();
-    // let devicePosition = this.devicePositionAdjust(timeStart)
-    // console.log(devicePosition)
-    // if(this.devicePositionAdjust(timeStart)){
-    //   console.log("ready to play")
-    //   this.showNextMovement(challengeItem.movement[movementIndex]);
-    //   //第一个动作0.5s后检测，以后的动作因为是提前0.5s显示，所以1s后检测状态
-    //   if (movementIndex == 0) {
-    //     setTimeout(this.getMechineStatus, 500);
-    //     timeStart = new Date().getTime();
-    //     this.getDecivePosi(timeStart)
-    //   } else {
-    //     setTimeout(this.getMechineStatus, 1000);
-    //   }
-    // }else{
-    //   wx.showToast({
-    //     title:"请重新调整设备",
-    //     icon: "none",
-    //     duration: 2000
-    //   })
-    // }
+    let timeStart = new Date().getTime();
+    that.showNextMovement(challengeItem.movement[movementIndex]);
+    //第一个动作0.5s后检测，以后的动作因为是提前0.5s显示，所以1s后检测状态
+    if (movementIndex == 0) {
+      setTimeout(that.getMechineStatus, 500);
+      timeStart = new Date().getTime();
+      that.getDecivePosi(timeStart) //test line
+    } else {
+      setTimeout(that.getMechineStatus, 1000);
+    }
   }
 
   /**
@@ -382,69 +377,74 @@ export default class Main {
     var showNum = 0           //总检测次数
     var readyNum = 0          //连续两次检测状态正确
     let angleToNorth = 0.0    //与正北方向夹角
-    let maxNum = 5            //总检测次数不超过5次，即10s
+    let maxNum = 5            //总检测次数不超过5次，每次检测时间间隔在下面定义
+    let posiResult;
     //let changeNum = 0         //记录状态改变次数
-    if(wx.startDeviceMotionListening){
-      wx.startDeviceMotionListening({
-        interval: 'normal',
-        success: function(res){
-          console.log(res);
-          wx.onDeviceMotionChange(function(res){
-            //changeNum++;
-            //console.log(changeNum)
-            //每两秒输出一次坐标状态
-            let dateNow = new Date().getTime()
-            if(dateNow - timeStart > 3 * 1000){   //每3秒检测一次
-              timeStart = dateNow;
-              showNum++
-              console.log(res.alpha.toFixed(2), res.beta.toFixed(2), res.gamma.toFixed(2));
-              // console.log(Math.abs(res.gamma.toFixed(2)))
-              // console.log(Math.abs(res.beta.toFixed(2)))
-              if(Math.abs(res.gamma.toFixed(2)) <10 && Math.abs(res.beta.toFixed(2))<10){ //左右和俯仰状态正常
-                console.log("now position is ok")
-                readyNum++
-                angleToNorth+=res.alpha;
-              }  
-            
-              if(readyNum>1 || showNum >= maxNum){   //  如果连续两秒状态合适或时间大于10s，则结束调整
-                //TODO : 需要记录水平角度，即与正北方向夹角
-                //console.log("readyNum is " +readyNum)
-                wx.stopDeviceMotionListening()
-                console.log("stop device motion listening")
-                console.log("showNum is " + showNum)
-                //手机调整时间不能超过10秒
-                if(showNum<5){
-                  console.log("请保持此状态")
-                  angleToNorth /= readyNum
-                  console.log("readyNum is " + readyNum)
-                  console.log("device position OK and angleToNorth is " + angleToNorth)
-                  return true
-                }else if(showNum >= maxNum){
-                  return false
+    let p1 = new Promise(function(resolve, reject){
+      if(wx.startDeviceMotionListening){
+        wx.startDeviceMotionListening({
+          interval: 'normal',
+          success: function(res){
+            console.log(res);
+            wx.onDeviceMotionChange(function(res){
+              //changeNum++;
+              //console.log(changeNum)
+              //每两秒输出一次坐标状态
+              let dateNow = new Date().getTime()
+              if(dateNow - timeStart > 2 * 1000){   //每2秒检测一次
+                timeStart = dateNow;
+                showNum++
+                console.log(res.alpha.toFixed(2), res.beta.toFixed(2), res.gamma.toFixed(2));
+                // console.log(Math.abs(res.gamma.toFixed(2)))
+                // console.log(Math.abs(res.beta.toFixed(2)))
+                if(Math.abs(res.gamma.toFixed(2)) <10 && Math.abs(res.beta.toFixed(2))<10){ //左右和俯仰状态正常
+                  console.log("now position is ok")
+                  readyNum++
+                  angleToNorth+=res.alpha;
+                }  
+                
+                //如果以下判断写在wx.onDeviceMotionChange()以外，可能会多执行一次，造成错误
+                //而且这个函数是异步的，在函数外不能得到改变的参数，如showNum，readNum等
+                if(readyNum>1 || showNum >= maxNum){   //  如果连续两次状态合适或时间大于maxNum*2，则结束调整
+                  //TODO : 需要记录水平角度，即与正北方向夹角
+                  //console.log("readyNum is " +readyNum)
+                  wx.stopDeviceMotionListening()
+                  console.log("stop device motion listening")
+                  console.log("showNum is " + showNum)
+                  //手机调整时间不能超过10秒
+                  if(showNum<5){
+                    console.log("请保持此状态")
+                    angleToNorth /= readyNum
+                    console.log("readyNum is " + readyNum)
+                    console.log("device position OK and angleToNorth is " + angleToNorth)
+                    //return true   //！！！此处return没有意义，因为这是一个嵌套的函数，并不是devicePositionAdjust
+                    posiResult = true
+                    resolve(posiResult)
+                  }else if(showNum >= maxNum){
+                    //return false
+                    posiResult = false
+                    reject(posiResult)
+                  }
                 }
               }
-            }
-            //console.log(res);
-          })
-          //wx.stopDeviceMotionListening();
-        },
-        fail: function(res){
-          console.log('can\'t use deviceMotion')
-        }
-      })
-    }else{
-      console.log('don\'t have device Motion')
-    }
-    //手机调整时间不能超过10秒
-    // if(showNum<5){
-    //   console.log("请保持此状态")
-    //   angleToNorth /= readyNum
-    //   console.log("readyNum is " + readyNum)
-    //   console.log("device position OK and angleToNorth is " + angleToNorth)
-    //   return true
-    // }else if(showNum>=5){
-    //   return false
-    // }
+              //console.log(res);
+            })
+            //wx.stopDeviceMotionListening();
+          },
+          fail: function(res){
+            console.log('can\'t use deviceMotion')
+            posiResult = false
+            reject(posiResult)
+          }
+        })
+      }else{
+        console.log('don\'t have device Motion')    //微信版本低，不存在此API
+        posiResult = false
+        reject(posiResult)
+        //TODO: 要区分是因为超时，还是因为设备不支持，还是因为微信版本低。
+      }
+    })
+    return p1
   }
 
   /**
