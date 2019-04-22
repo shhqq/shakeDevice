@@ -209,7 +209,7 @@ export default class Main {
       if (movementIndex == 0) {
         setTimeout(this.getMechineStatus, 500);
         timeStart = new Date().getTime();
-        this.getDecivePosi(timeStart)
+        this.getDecivePosi(timeStart)   //test line
       } else {
         setTimeout(this.getMechineStatus, 1000);
       }
