@@ -294,10 +294,19 @@ export default class Main {
     //TODO: 如何获取设备状态？
     let temp = ['up', 'don', 'left', 'right', 'left-down', 'right-dow'];
     //console.log(temp);
-    mechineStatus = temp[movementIndex];
+    //mechineStatus = temp[movementIndex];
     
+    //test
+    status_record = [[90, -89, 90],[89, -91,91],[91,-90,89]]
+    angleToNorth = 30;
 
-    if (mechineStatus == challengeItem.movement[movementIndex]) {
+    let status_res = this.meanAngle(status_record)
+    mechineStatus = this.angleToStatus(challengeItem.movement[movementIndex], status_res, angleToNorth)
+    console.log('status_res is ', status_res)
+    console.log('mechineStatus is ', mechineStatus)
+
+    //if (mechineStatus == challengeItem.movement[movementIndex]) {
+    if (mechineStatus) {
       console.log('well done ' + movementIndex);
       if (movementIndex == challengeItem.movement.length - 1) {
         console.log('Congratulations! You win!');
@@ -307,7 +316,7 @@ export default class Main {
       setTimeout(this.startMyGame, (challengeItem.timeDuration[movementIndex] - 1) * 1000);//每个动作0.5s后检测状态，又提前0.5s显示下一个动作
       movementIndex = movementIndex + 1;    //指向下一个动作
     } else {
-      console.log('game over! %d movements left', challengeItem.timeDuration.length - 1 - movementIndex);
+      console.log('game over! %d movements left', challengeItem.timeDuration.length - movementIndex);
       return;
     }
 
