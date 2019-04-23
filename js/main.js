@@ -10,7 +10,7 @@ let databus = new DataBus()
 let mechineStatus = '';
 //自定义数据，暂存
 let challengeItem = {
-  movement: ['up', 'down', 'left', 'right', 'left-down', 'right-down'],   //动作
+  movement: ['up', 'down', 'left', 'right', 'left-rotation', 'right-rotation'],   //动作
   timeDuration: [2, 3, 4, 3, 5, 4] //持续时间，单位：秒，需大于1s，在0.5秒前提醒下一个动作，第一个动作需要大于1s
 }
 let movementIndex = 0;
@@ -198,6 +198,9 @@ export default class Main {
       function (value) {
         console.log('value is ', value)
         console.log("ready to play")
+        //生成随机动作列表
+        challengeItem = that.getMovementList(8)
+        console.log('challengeItem is ', challengeItem)
         that.startMyGame()
       },
       function (reason) {
@@ -465,7 +468,6 @@ export default class Main {
    * @returns false 状态错误，结束游戏
    */
   angleToStatus(movement, angle, angleToNorth){
-    let statusSet = ["left", "right", "up", "down", "left_rotate", "right_rotate"]
     if(movement == "left" && Math.Math.abs(angle[2]-90) < 10){  
       return true
     }else if(movement == "right" && Math.abs(angle[2]+90) < 10){
@@ -474,9 +476,9 @@ export default class Main {
       return true
     }else if(movement == "down" && Math.abs(angle[1] - 90) < 10){
       return true
-    }else if(movement == "left_rotate" && (Math.abs(angle[0] - angleToNorth +90)<10 ||Math.abs(angle[0]-angleToNorth-270)<10)){
+    }else if(movement == "left_rotation" && (Math.abs(angle[0] - angleToNorth +90)<10 ||Math.abs(angle[0]-angleToNorth-270)<10)){
       return true
-    }else if(movement == "right_rotate"&&(Math.abs(angle[0]-angleToNorth-90)<10 || Math.abs(angle[0]-angleToNorth+270)<10)){
+    }else if(movement == "right_rotation"&&(Math.abs(angle[0]-angleToNorth-90)<10 || Math.abs(angle[0]-angleToNorth+270)<10)){
       return true
     }else{
       return false
@@ -511,5 +513,36 @@ export default class Main {
       res.push(temp)
     }
     return res
+  }
+
+  /**
+   * 生成指定长度的随机动作列表
+   * @param {number} num 包含动作个数
+   * @returns {list} movementList, timeDurationList 动作列表及相应的持续时间列表
+   */
+  getMovementList(num){
+    let movementSet = ['up', 'down', 'left', 'right', 'left-rotation', 'right-rotation']
+    let movementList = []
+    let timeDurationList = []
+
+    //动作不超过10，时间不超过6s
+    let max_movement = 10;
+    let max_timeDuration = 6;
+
+    for(let i = 0; i < num; i++){
+      //得到一个0-5之间的随机数，整数，且包含0和5
+      let moveRandom = Math.floor(Math.random() * 6)
+      let timeRandom = Math.floor(Math.random() * 6) + 1
+      movementList.push(movementSet[moveRandom])
+      timeDurationList.push(timeRandom)
+    }
+    
+    let challengeItem = {
+      movement: movementList,
+      timeDuration: timeDurationList
+    }
+    console.log(movementList)
+    console.log(timeDurationList)
+    return challengeItem
   }
 }
