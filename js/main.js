@@ -297,7 +297,7 @@ export default class Main {
 
   /**
    * 页面显示下一个动作
-   * @param {需要显示的动作} movement 
+   * @param {string} movement 需要显示的动作
    */
   showNextMovement(movement) {
     console.log('next movement is ' + movement);
@@ -316,7 +316,7 @@ export default class Main {
 
   /**
    * 获取手机姿势--test function
-   * @param {*} timeStart 游戏开始时间
+   * @param {number} timeStart 游戏开始时间
    */
   getDecivePosi(timeStart){
     //let a = 0.3244;
@@ -348,7 +348,7 @@ export default class Main {
 
   /**
    * 游戏开始前调整手机姿势
-   * @param timeStart 游戏开始时的时间
+   * @param {number} timeStart 游戏开始时的时间
    * @returns true 10秒内调整成功
    * @returns false 10秒内调整失败
    */
