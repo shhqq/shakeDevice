@@ -193,7 +193,7 @@ export default class Main {
   getReady() {
     var that = this
     let timeStart = new Date().getTime();
-
+    console.log('getReady function')
     that.devicePositionAdjust(timeStart).then(
       function (value) {
         console.log('value is ', value)
@@ -206,19 +206,20 @@ export default class Main {
       function (reason) {
         //TODO: 用户选择重新调整设备或退出游戏返回主界面
         console.log('reason is ', reason)
-        wx.showModal({
-          title: "提示",
-          content: "请重新调整状态",
-          success(res) {
-            if (res.confirm) {
-              console.log('adjust device again')
-              that.getReady()
-            } else if (res.cancel) {
-              console.log('cancel')
-              //TODO: 返回游戏主界面
-            }
-          }
-        })
+        //that.getReady()
+        // wx.showModal({
+        //   title: "提示",
+        //   content: "请重新调整状态",
+        //   success(res) {
+        //     if (res.confirm) {
+        //       console.log('adjust device again')
+        //       that.getReady()
+        //     } else if (res.cancel) {
+        //       console.log('cancel')
+        //       //TODO: 返回游戏主界面
+        //     }
+        //   }
+        // })
       }
     )
   }
@@ -235,7 +236,7 @@ export default class Main {
     if (movementIndex == 0) {
       setTimeout(that.getMechineStatus, 500);
       timeStart = new Date().getTime();
-      that.getDecivePosi(timeStart) //test line
+      //that.getDecivePosi(timeStart) //test line
     } else {
       setTimeout(that.getMechineStatus, 1000);
     }
@@ -319,7 +320,7 @@ export default class Main {
       setTimeout(this.startMyGame, (challengeItem.timeDuration[movementIndex] - 1) * 1000);//每个动作0.5s后检测状态，又提前0.5s显示下一个动作
       movementIndex = movementIndex + 1;    //指向下一个动作
     } else {
-      console.log('game over! %d movements left', challengeItem.timeDuration.length - movementIndex);
+      console.log('game over! ' , challengeItem.timeDuration.length - movementIndex, 'movements left');
       return;
     }
 
@@ -386,19 +387,25 @@ export default class Main {
    */
   devicePositionAdjust(timeStart){
     console.log("请调整手机姿势至平放") //不需要指北
-    var showNum = 0           //总检测次数
-    var readyNum = 0          //连续两次检测状态正确
+    let showNum = 0           //总检测次数
+    let readyNum = 0          //连续两次检测状态正确
     let angleToNorth = 0.0    //与正北方向夹角
     let maxNum = 5            //总检测次数不超过5次，每次检测时间间隔在下面定义
     let posiResult;
     //let changeNum = 0         //记录状态改变次数
+    console.log('begin, showNum is ', showNum)
     let p1 = new Promise(function(resolve, reject){
       if(wx.startDeviceMotionListening){
         wx.startDeviceMotionListening({
           interval: 'normal',
           success: function(res){
             console.log(res);
+            let showNum = 0
+            let changeItem = 0;
             wx.onDeviceMotionChange(function(res){
+              changeItem++
+              console.log(changeItem)
+              console.log('heeh  showNum is ', showNum)
               //changeNum++;
               //console.log(changeNum)
               //每两秒输出一次坐标状态
@@ -406,6 +413,7 @@ export default class Main {
               if(dateNow - timeStart > 2 * 1000){   //每2秒检测一次
                 timeStart = dateNow;
                 showNum++
+                console.log('++ showNum is ', showNum)
                 console.log(res.alpha.toFixed(2), res.beta.toFixed(2), res.gamma.toFixed(2));
                 // console.log(Math.abs(res.gamma.toFixed(2)))
                 // console.log(Math.abs(res.beta.toFixed(2)))
@@ -435,6 +443,7 @@ export default class Main {
                   }else if(showNum >= maxNum){
                     //return false
                     posiResult = false
+                    console.log('error, showNum is ', showNum)
                     reject(posiResult)
                   }
                 }
@@ -446,6 +455,8 @@ export default class Main {
           fail: function(res){
             console.log('can\'t use deviceMotion')
             posiResult = false
+            showNum++
+            console.log('fail, showNum is ', showNum)
             reject(posiResult)
           }
         })
