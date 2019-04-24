@@ -556,4 +556,26 @@ export default class Main {
     console.log(timeDurationList)
     return challengeItem
   }
+
+  function f1(){
+    this.f2().then(
+      function(value){
+            console.log(value)	
+  },function(reason){
+  console.log(reason)
+  this.f1()
+  })
+  }
+  
+  function f2(){
+    let a = 0
+    console.log(a)
+    let p1 = new Promise(function(resolve, reject){
+      a++
+      console.log(a)
+      resolve(a)
+      
+  })
+  return p1
+  } 
 }
