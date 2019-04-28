@@ -192,36 +192,252 @@ export default class Main {
    */
   getReady() {
     var that = this
+    // that.ff4().then(function(va){
+    //   console.log(va)
+    //   wx.showModal({
+    //     title:'title',
+    //     content:'try again',
+    //     success(res){
+    //       if(res.confirm){
+    //         that.getReady()
+    //       }else if(res.cancel){
+    //         console.log('exit')
+    //       }
+    //     }
+    //   })
+    // })
+    //test
+    let timeStart = new Date().getTime();
+    that.ff2(timeStart).then(function(va){
+      console.log(va)
+
+      wx.showModal({
+        title: 'success',
+        content: 'try again',
+        success(res){
+          if(res.confirm){
+            that.getReady()
+          }else if(res.cancel){
+            console.log('cancel')
+          }
+        }
+      })
+    },
+    function(re){
+      console.log(re)
+      // that.getReady()
+      wx.showModal({
+        title: 'error',
+        content: 'try again',
+        success(res){
+          if(res.confirm){
+            that.getReady()
+          }else if(res.cancel){
+            console.log('cancel')
+          }
+        }
+      })
+    })
+
+    //that.ff3()
+    //setTimeout(that.ff3, 15000);
+
+    //*/
+
+    /*
     let timeStart = new Date().getTime();
     console.log('getReady function')
-    that.devicePositionAdjust(timeStart).then(
+    that.devicePositionAdjust(timeStart, 0).then(
       function (value) {
         console.log('value is ', value)
         console.log("ready to play")
         //生成随机动作列表
-        challengeItem = that.getMovementList(8)
-        console.log('challengeItem is ', challengeItem)
-        that.startMyGame()
+        wx.showModal({
+          title: '提示',
+          content: '开始游戏',
+          success(res){
+            if(res.confirm){
+              challengeItem = that.getMovementList(8)
+              console.log('challengeItem is ', challengeItem)
+              that.startMyGame()
+            }else if(res.cancel){
+              console.log('cancel')
+              //TODO: 返回游戏主界面
+            }
+          }
+        })
       },
       function (reason) {
         //TODO: 用户选择重新调整设备或退出游戏返回主界面
         console.log('reason is ', reason)
         //that.getReady()
-        // wx.showModal({
-        //   title: "提示",
-        //   content: "请重新调整状态",
-        //   success(res) {
-        //     if (res.confirm) {
-        //       console.log('adjust device again')
-        //       that.getReady()
-        //     } else if (res.cancel) {
-        //       console.log('cancel')
-        //       //TODO: 返回游戏主界面
-        //     }
-        //   }
-        // })
+        wx.showModal({
+          title: "提示",
+          content: "请重新调整状态",
+          success(res) {
+            if (res.confirm) {
+              console.log('adjust device again')
+              that.getReady()
+            } else if (res.cancel) {
+              console.log('cancel')
+              //TODO: 返回游戏主界面
+            }
+          }
+        })
       }
-    )
+    )//*/
+  }
+
+  // test function
+  ff3(){
+    let showNum = 0           //总检测次数
+    let posiResult;
+    console.log('begin, showNum is ', showNum)
+    //let p1 = new Promise(function(resolve, reject){
+      if(wx.startDeviceMotionListening){
+        wx.startDeviceMotionListening({
+          interval: 'normal',
+          success: function(res){
+            console.log('start motion')
+            console.log(res);
+
+            let changeItem = 0;
+            console.log('at beginning changeItem is ', changeItem)
+            wx.onDeviceMotionChange(function(res){
+              changeItem++
+              console.log(changeItem)
+
+              if(changeItem >= 100){   //  如果连续两次状态合适或时间大于maxNum*2，则结束调整
+
+                wx.stopDeviceMotionListening({
+                  fail: function(res){
+                    console.log('stop function failed ', res)
+                  },
+                  success: function(res){
+                    console.log("stop device motion listening")
+                    console.log("changeItem is " + changeItem)
+                    //手机调整时间不能超过10秒
+                    //return false
+                    showNum = 0
+                    posiResult = false
+                    console.log('error, changeItem is ', changeItem)
+                    //reject(posiResult)
+                    
+                  }
+                })
+              }
+            })
+          },
+          fail: function(res){
+            console.log('can\'t use deviceMotion')
+            posiResult = false
+            showNum++
+            console.log('fail, showNum is ', showNum)
+            //reject(posiResult)
+          }
+        })
+      }
+    //})
+    //return p1
+  }
+  ff4(){
+    let pp = new Promise(function(resolve, reject){
+      let te = 8
+      while(te<15){
+        te++
+        
+      }
+      console.log('te:' ,te)
+      resolve(te)
+    })
+    return pp
+  }
+
+  ff(){
+    let pp = new Promise(function(resolve, reject){
+      let te = 8
+      setTimeout(function(){
+        console.log('settimeout')
+        let aa = Math.random()
+        if(aa<0.5){
+          te = te-1
+          resolve(te)
+        }else{
+          te = te+1
+          reject(te)
+        }
+        //resolve('success')
+      }, 2000)
+    })
+    return pp
+  }
+
+
+  ff2(timeStart){
+    let showNum = 0           //总检测次数
+    let readyNum = 0          //连续两次检测状态正确
+    let angleToNorthTemp = 0.0    //与正北方向夹角
+    let maxNum = 4            //总检测次数不超过5次，每次检测时间间隔在下面定义
+    let posiResult;
+    //let changeNum = 0         //记录状态改变次数
+    console.log('begin, showNum is ', showNum)
+    let p1 = new Promise(function(resolve, reject){
+      if(wx.startDeviceMotionListening){
+        wx.startDeviceMotionListening({
+          interval: 'normal',
+          success: function(res){
+            console.log('start motion')
+            console.log(res);
+            //let showNum = 0
+            let changeItem = 0;
+            console.log('at beginning changeItem is ', changeItem)
+            wx.onDeviceMotionChange(function(res){
+              changeItem++
+              console.log(changeItem)
+              //console.log('heeh  showNum is ', showNum)
+              //changeNum++;
+              //console.log(changeNum)
+              //每两秒输出一次坐标状态
+
+                if(changeItem >= 100){   //  如果连续两次状态合适或时间大于maxNum*2，则结束调整
+                  //TODO : 需要记录水平角度，即与正北方向夹角
+                  //console.log("readyNum is " +readyNum)
+                  //20190424 put the judge of showNum into stopDeviceMotionListening's callback function
+                  //20190424 the stopDeviceMotionListen() always fail in IOS, whether it will success or
+                  //not on Android is not clear
+                  wx.stopDeviceMotionListening({
+                    fail: function(res){
+                      console.log('stop function failed ', res)
+                    },
+                    success: function(res){
+                      console.log("stop device motion listening")
+                      console.log("changeItem is " + changeItem)
+                      //手机调整时间不能超过10秒
+                      //return false
+                      showNum = 0
+                      changeItem=0
+                      posiResult = false
+                      console.log('error, changeItem is ', changeItem)
+                      reject(posiResult)
+                      
+                    }
+                  })
+                  
+                }
+              
+            })
+          },
+          fail: function(res){
+            console.log('can\'t use deviceMotion')
+            posiResult = false
+            showNum++
+            console.log('fail, showNum is ', showNum)
+            reject(posiResult)
+          }
+        })
+      }
+    })
+    return p1
   }
 
   /**
@@ -385,9 +601,9 @@ export default class Main {
    * @returns true 10秒内调整成功
    * @returns false 10秒内调整失败
    */
-  devicePositionAdjust(timeStart){
+  devicePositionAdjust(timeStart, showNumber){
     console.log("请调整手机姿势至平放") //不需要指北
-    let showNum = 0           //总检测次数
+    let showNum = showNumber           //总检测次数
     let readyNum = 0          //连续两次检测状态正确
     let angleToNorthTemp = 0.0    //与正北方向夹角
     let maxNum = 5            //总检测次数不超过5次，每次检测时间间隔在下面定义
@@ -399,20 +615,21 @@ export default class Main {
         wx.startDeviceMotionListening({
           interval: 'normal',
           success: function(res){
+            console.log('start motion')
             console.log(res);
-            let showNum = 0
+            showNum = 0
             let changeItem = 0;
             wx.onDeviceMotionChange(function(res){
-              changeItem++
-              console.log(changeItem)
-              console.log('heeh  showNum is ', showNum)
+              //changeItem++
+              //console.log(changeItem)
+              //console.log('heeh  showNum is ', showNum)
               //changeNum++;
               //console.log(changeNum)
               //每两秒输出一次坐标状态
               let dateNow = new Date().getTime()
               if(dateNow - timeStart > 2 * 1000){   //每2秒检测一次
                 timeStart = dateNow;
-                showNum++
+                showNum = showNum+1
                 console.log('++ showNum is ', showNum)
                 console.log(res.alpha.toFixed(2), res.beta.toFixed(2), res.gamma.toFixed(2));
                 // console.log(Math.abs(res.gamma.toFixed(2)))
@@ -477,6 +694,7 @@ export default class Main {
         //TODO: 要区分是因为超时，还是因为设备不支持，还是因为微信版本低。
       }
     })
+    console.log('end of adjust')
     return p1
   }
 
@@ -637,14 +855,14 @@ export default class Main {
     let movementList = []
     let timeDurationList = []
 
-    //动作不超过10，时间不超过6s
+    //动作不超过10，时间最短2s，且不超过6s
     let max_movement = 10;
     let max_timeDuration = 6;
 
     for(let i = 0; i < num; i++){
       //得到一个0-5之间的随机数，整数，且包含0和5
       let moveRandom = Math.floor(Math.random() * 6)
-      let timeRandom = Math.floor(Math.random() * 6) + 1
+      let timeRandom = Math.floor(Math.random() * 5) + 2 //时间在2-6s
       movementList.push(movementSet[moveRandom])
       timeDurationList.push(timeRandom)
     }
@@ -658,25 +876,25 @@ export default class Main {
     return challengeItem
   }
 
-  function f1(){
-    this.f2().then(
-      function(value){
-            console.log(value)	
-  },function(reason){
-  console.log(reason)
-  this.f1()
-  })
-  }
+  // function f1(){
+  //   this.f2().then(
+  //     function(value){
+  //           console.log(value)	
+  // },function(reason){
+  // console.log(reason)
+  // this.f1()
+  // })
+  // }
   
-  function f2(){
-    let a = 0
-    console.log(a)
-    let p1 = new Promise(function(resolve, reject){
-      a++
-      console.log(a)
-      resolve(a)
+  // function f2(){
+  //   let a = 0
+  //   console.log(a)
+  //   let p1 = new Promise(function(resolve, reject){
+  //     a++
+  //     console.log(a)
+  //     resolve(a)
       
-  })
-  return p1
-  } 
+  // })
+  // return p1
+  // } 
 }
