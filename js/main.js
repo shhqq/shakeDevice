@@ -208,7 +208,7 @@ export default class Main {
     // })
     //test
     let timeStart = new Date().getTime();
-    that.ff2(timeStart).then(function(va){
+    that.ff5().then(function(va){
       console.log(va)
 
       wx.showModal({
@@ -426,6 +426,52 @@ export default class Main {
                 }
               
             })
+          },
+          fail: function(res){
+            console.log('can\'t use deviceMotion')
+            posiResult = false
+            showNum++
+            console.log('fail, showNum is ', showNum)
+            reject(posiResult)
+          }
+        })
+      }
+    })
+    return p1
+  }
+
+  ff5(){
+    let showNum = 0           //总检测次数
+    let readyNum = 0          //连续两次检测状态正确
+    let angleToNorthTemp = 0.0    //与正北方向夹角
+    let maxNum = 4            //总检测次数不超过5次，每次检测时间间隔在下面定义
+    let posiResult;
+    //let changeNum = 0         //记录状态改变次数
+    console.log('begin, showNum is ', showNum)
+    let p1 = new Promise(function(resolve, reject){
+      if(wx.startDeviceMotionListening){
+        wx.startDeviceMotionListening({
+          interval: 'normal',
+          success: function(res){
+            console.log('start motion')
+            console.log(res);
+            //let showNum = 0
+            let changeItem = 0;
+            console.log('at beginning changeItem is ', changeItem)
+            let temp = Math.random()
+            if(temp>0.001){
+              wx.stopDeviceMotionListening({
+                fail: function(res){
+                  console.log(res)
+                  reject(temp)
+                },
+                success: function(res){
+                  console.log(res)
+                  reject(temp)
+                }
+              })
+            }
+
           },
           fail: function(res){
             console.log('can\'t use deviceMotion')
